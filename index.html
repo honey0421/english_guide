@@ -454,20 +454,37 @@
       });
     }
 
-    // 음성 합성 기능 수행 (브라우저 접근 금지 환경의 이중 예외 Fallback 구성)
+    // ============================================================
+    // 음성 합성 기능 (우선순위: ① 안드로이드 네이티브 TTS 브리지
+    //                        → ② 브라우저 speechSynthesis
+    //                        → ③ 구글 백업 오디오 스트리밍)
+    // ============================================================
     function speak(text) {
+      // ① 안드로이드 앱(WebView)에서 실행 중이고, 네이티브 TTS 브리지가
+      //    주입되어 있다면 그것을 최우선으로 사용한다. (완전 무료, 오프라인 동작)
+      if (window.AndroidTTS && typeof window.AndroidTTS.speak === 'function') {
+        try {
+          window.AndroidTTS.speak(text);
+          return;
+        } catch (e) {
+          console.warn('AndroidTTS 호출 실패, 브라우저 TTS로 대체한다.', e);
+          // 실패 시 아래 ②, ③ 단계로 자연스럽게 넘어간다.
+        }
+      }
+
+      // ② 일반 브라우저(크롬 등)에서 열람 중이라면 Web Speech API를 사용한다.
       if ('speechSynthesis' in window && window.speechSynthesis.speak) {
         try {
           window.speechSynthesis.cancel();
-          
+
           const utterance = new SpeechSynthesisUtterance(text);
           utterance.lang = 'en-US';
           utterance.rate = 0.85;
-          
+
           utterance.onerror = function() {
             speakWithFallback(text);
           };
-          
+
           window.speechSynthesis.speak(utterance);
           return;
         } catch (e) {
@@ -478,7 +495,7 @@
       speakWithFallback(text);
     }
 
-    // 구글 외부 스트리밍 오디오 지원 백업 TTS 서비스 연동
+    // ③ 구글 외부 스트리밍 오디오 지원 최종 백업 TTS
     function speakWithFallback(text) {
       try {
         if (activeAudio) {
