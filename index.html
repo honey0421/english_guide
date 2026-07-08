@@ -329,6 +329,11 @@
 
     // 라이프사이클 이닛
     function init() {
+     history.replaceState(
+  { category: currentCategory },
+  '',
+  '#'+currentCategory
+);
       renderCategoryTabs();
       renderSentences();
       setupEventListeners();
@@ -346,14 +351,35 @@
         }`;
         button.textContent = cat;
         button.addEventListener('click', () => {
-          currentCategory = cat;
-          renderCategoryTabs();
-          renderSentences();
-        });
+
+  currentCategory = cat;
+
+  // WebView 뒤로가기용 기록 생성
+  history.pushState(
+    { category: cat },
+    '',
+    '#'+cat
+  );
+
+  renderCategoryTabs();
+  renderSentences();
+
+});
         categoryTabs.appendChild(button);
       });
     }
+window.addEventListener('popstate', function(event) {
 
+  if (event.state && event.state.category) {
+
+    currentCategory = event.state.category;
+
+    renderCategoryTabs();
+    renderSentences();
+
+  }
+
+});
     // 카드 렌더링 함수
     function renderSentences() {
       sentenceContainer.innerHTML = '';
