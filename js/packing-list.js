@@ -190,8 +190,13 @@
     byId('packingProgress').setAttribute('aria-valuenow', String(percent));
   }
 
-  function showSection(section, shouldPush) {
+  // 화면 이력은 '기본 회화 → 여행 준비/북마크' 한 단계만 유지한다.
+  // 카테고리는 필터이므로 history에 쌓지 않는다.
+  let currentSection = 'conversation';
+  function showSection(section) {
     const packing = section === 'packing';
+    const favorites = section === 'favorites';
+    currentSection = section;
     const talk = byId('conversationSection');
     const pack = byId('packingSection');
     talk.hidden = packing;
@@ -209,19 +214,65 @@
       tab.classList.toggle('text-slate-600', !active);
     });
     byId('toggleModeBtn').classList.toggle('hidden', packing);
-    if (shouldPush && history.state?.travelingualSection !== section) {
-      history.pushState({ ...(history.state || {}), travelingualSection: section }, '', location.href);
+    // 전체 북마크 보기 상태는 기존 카테고리를 변경하지 않는다.
+    if (typeof window.setTravelingualFavoriteView === 'function') {
+      // 북마크 표시 여부가 바뀔 때만 문장 목록을 다시 그린다.
+      if (window.TravelingualNavigation.favoriteVisible !== favorites) {
+        window.setTravelingualFavoriteView(favorites);
+        window.TravelingualNavigation.favoriteVisible = favorites;
+      }
     }
     window.scrollTo(0, 0);
   }
 
-  const initialSection = history.state?.travelingualSection === 'packing' ? 'packing' : 'conversation';
-  if (!history.state || !history.state.travelingualSection) {
-    history.replaceState({ ...(history.state || {}), travelingualSection: 'conversation' }, '', location.href);
+  function navState(section) {
+    return { ...(history.state || {}), travelingualSection: section };
   }
-  byId('tabConversation').addEventListener('click', () => showSection('conversation', true));
-  byId('tabPacking').addEventListener('click', () => showSection('packing', true));
-  window.addEventListener('popstate', event => showSection(event.state?.travelingualSection === 'packing' ? 'packing' : 'conversation', false));
+
+  // 다른 보조 화면에서 다른 보조 화면으로 이동할 때는 이력을 새로 쌓지 않는다.
+  function open(section) {
+    if (section === currentSection) return;
+    if (section === 'conversation') { closeToConversation(); return; }
+    if (section !== 'packing' && section !== 'favorites') return;
+    if (currentSection === 'conversation') {
+      history.pushState(navState(section), '', location.href);
+    } else {
+      history.replaceState(navState(section), '', location.href);
+    }
+    showSection(section);
+  }
+
+  function closeToConversation() {
+    if (currentSection === 'conversation') return false;
+    // 즉시 화면은 복귀시키고, 원래 기본 화면으로 popstate를 통해 이력을 정리한다.
+    showSection('conversation');
+    if (history.state?.travelingualSection !== 'conversation') {
+      history.back();
+    }
+    return true;
+  }
+
+  // Android 최신 앱은 보조 화면을 먼저 닫고, 기본 화면은 2회 뒤로가기로 종료한다.
+  // 기존 설치 앱은 WebView.goBack()과 popstate만으로 동일한 보조 화면 복귀가 가능하다.
+  window.TravelingualNavigation = {
+    favoriteVisible: false,
+    open,
+    closeToConversation,
+    handleAndroidBack() { return closeToConversation(); }
+  };
+
+  const initialSection = ['packing', 'favorites'].includes(history.state?.travelingualSection)
+    ? history.state.travelingualSection : 'conversation';
+  if (!history.state || !history.state.travelingualSection) {
+    history.replaceState(navState('conversation'), '', location.href);
+  }
+  byId('tabConversation').addEventListener('click', () => open('conversation'));
+  byId('tabPacking').addEventListener('click', () => open('packing'));
+  window.addEventListener('popstate', event => {
+    const section = ['packing', 'favorites'].includes(event.state?.travelingualSection)
+      ? event.state.travelingualSection : 'conversation';
+    showSection(section);
+  });
 
   byId('packingTripName').value = state.tripName;
   byId('packingDeparture').value = state.departure;
