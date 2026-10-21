@@ -40,9 +40,24 @@
     .card-back {
       transform: rotateY(180deg);
     }
-    /* 좁은 휴대폰에서는 여행 이름과 출발일을 세로 배치 */
+    /* 여행 이름/출발일 입력칸은 작은 화면에서 비율과 글자 크기를 미세 조정 */
+    .packing-trip-fields {
+      grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr);
+    }
+    #packingDeparture {
+      font-size: 15px;
+      padding-right: 2.25rem;
+      line-height: 1.2;
+    }
+    @media (max-width: 430px) {
+      #packingDeparture {
+        font-size: 14px;
+        padding-right: 2rem;
+      }
+    }
     @media (max-width: 359px) {
       .packing-trip-fields { grid-template-columns: minmax(0, 1fr); }
+      #packingDeparture { font-size: 16px; padding-right: 1rem; }
     }
   </style>
 </head>
@@ -139,14 +154,14 @@
         <p class="text-[15px] text-slate-500 mb-1 leading-relaxed">필수 준비물 25개를 확인하고 나만의 항목을 추가하세요.</p>
         <p class="text-[15px] text-slate-500 leading-relaxed">여행 준비도 하고, 영어도 조금씩 익혀보세요!</p>
         <p class="text-[16px] font-bold text-blue-600 mt-1 mb-3">📘 오늘도 여행 영어 한 문장!</p>
-        <div class="packing-trip-fields grid grid-cols-2 gap-3">
+        <div class="packing-trip-fields grid gap-3">
           <div>
             <label for="packingTripName" class="block text-[15px] font-bold mb-1">여행 이름</label>
             <input type="text" id="packingTripName" maxlength="60" placeholder="예: 스페인 여행" class="w-full min-w-0 px-3 py-2.5 rounded-xl bg-slate-100 focus:bg-white border-2 border-transparent focus:border-blue-500 outline-none text-base">
           </div>
           <div>
             <label for="packingDeparture" class="block text-[15px] font-bold mb-1">출발일 (선택)</label>
-            <input type="date" id="packingDeparture" class="w-full min-w-0 px-3 py-2.5 rounded-xl bg-slate-100 focus:bg-white border-2 border-transparent focus:border-blue-500 outline-none text-base">
+            <input type="date" id="packingDeparture" class="w-full min-w-0 px-3 py-2.5 rounded-xl bg-slate-100 focus:bg-white border-2 border-transparent focus:border-blue-500 outline-none">
           </div>
         </div>
         <div id="packingDday" class="mt-3 text-[15px] font-semibold text-blue-600" aria-live="polite">출발일을 선택하면 D-day가 표시됩니다.</div>
